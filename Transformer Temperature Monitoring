@@ -1,0 +1,89 @@
+#include <Arduino.h>
+#include <LiquidCrystal.h>
+
+// LM35 sensor pin
+const int tempPin = A0;
+
+// Buzzer and LED
+const int buzzerPin = 8;
+const int ledPin = 9;
+
+// LCD pins: RS, EN, D4, D5, D6, D7
+LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+
+// Temperature limits
+const float WARNING_TEMP = 60.0;
+const float DANGER_TEMP = 80.0;
+
+void setup() {
+    Serial.begin(9600);
+
+    pinMode(buzzerPin, OUTPUT);
+    pinMode(ledPin, OUTPUT);
+
+    lcd.begin(16, 2);
+
+    lcd.setCursor(0, 0);
+    lcd.print("Transformer");
+    lcd.setCursor(0, 1);
+    lcd.print("Temp Monitor");
+
+    delay(2000);
+    lcd.clear();
+}
+
+void loop() {
+
+    // Read LM35 sensor
+    int sensorValue = analogRead(tempPin);
+
+    // Convert ADC value to voltage
+    float voltage = sensorValue * (5.0 / 1023.0);
+
+    // LM35 gives 10mV per degree Celsius
+    float temperature = voltage * 100.0;
+
+    // Display temperature
+    lcd.setCursor(0, 0);
+    lcd.print("Temp: ");
+    lcd.print(temperature, 1);
+    lcd.print((char)223);
+    lcd.print("C   ");
+
+    Serial.print("Transformer Temperature: ");
+    Serial.print(temperature);
+    Serial.println(" C");
+
+    // Normal condition
+    if (temperature < WARNING_TEMP) {
+
+        digitalWrite(buzzerPin, LOW);
+        digitalWrite(ledPin, LOW);
+
+        lcd.setCursor(0, 1);
+        lcd.print("Status: NORMAL   ");
+    }
+
+    // Warning condition
+    else if (temperature >= WARNING_TEMP &&
+             temperature < DANGER_TEMP) {
+
+        digitalWrite(buzzerPin, LOW);
+        digitalWrite(ledPin, HIGH);
+
+        lcd.setCursor(0, 1);
+        lcd.print("Status: WARNING  ");
+    }
+
+    // Danger condition
+    else {
+
+        digitalWrite(buzzerPin, HIGH);
+        digitalWrite(ledPin, HIGH);
+
+        lcd.setCursor(0, 1);
+        lcd.print("OVER TEMP!      ");
+    }
+
+    delay(1000);
+}
